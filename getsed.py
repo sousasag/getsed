@@ -188,12 +188,8 @@ def oplotseds2():
 
 def read_grid_parameters():
     data_grid = fits.getdata("ck04models/catalog.fits")
-    i = 0
-    j = 0
-    nseds = 6688
-    nwave = 1221
-    sed_grid = np.zeros((nseds*nwave, 5))
-    values = np.zeros(nseds*nwave)
+    sed_grid = np.zeros((0,5))
+    i=0
     for line in data_grid:
         teff, met, logg = line['INDEX'].split(',')
         teff = float(teff)
@@ -201,8 +197,12 @@ def read_grid_parameters():
         logg = float(logg)
         wave, flux = read_ck04models_numbers('ck04models/'+line['FILENAME'])
         print i, len(data_grid),line['INDEX'], line['FILENAME'], teff, met, logg,len(wave), wave[0]
-        for j in range(len(wave)):
-            sed_grid[j+i*nwave] = teff, met, logg, wave[j], flux[j] 
+        if np.all(flux == 0):
+            print "skipping zero flux sed:"
+        else:
+            for j in range(len(wave)):
+                #print line['FILENAME'], teff, met, logg, wave[j], flux[j]
+                sed_grid = np.append(sed_grid,[[teff,met,logg,wave[j],flux[j]]],axis=0)
         i += 1
     return sed_grid
 
@@ -222,13 +222,15 @@ def main():
     print "Hello"
 
     sed_grid = read_grid_parameters()
-    ised = 50
-    print sed_grid[ised*NWAVE][0:3]
-    wave = sed_grid[ised*NWAVE:(ised+1)*NWAVE][4]
-    flux = sed_grid[ised*NWAVE:(ised+1)*NWAVE][5]
+    print sed_grid.shape
+    ised = 0
+    print sed_grid[ised*NWAVE]
+    print ised*NWAVE, (ised+1)*NWAVE
+    wave = sed_grid[ised*NWAVE:(ised+1)*NWAVE,3]
+    flux = sed_grid[ised*NWAVE:(ised+1)*NWAVE,4]
     wave, flux = get_sed_units(wave,flux)
     plot_sed(wave, flux)
-    return
+#    return
 #    oplotseds2()
 #    return
 
@@ -243,6 +245,7 @@ def main():
     test_sed = "models_kurucz/seds/kt07250g+4.5z+0.0_sed.fits.gz"
     test_sed = "models_kurucz/seds/kt08000g+2.5z-2.5_sed.fits.gz"
     test_sed = "models_kurucz/seds/kt04500g+4.0z+0.0_sed.fits.gz"
+    test_sed = "models_kurucz/seds/kt10000g+2.0z-0.5_sed.fits.gz"
 
     wave,flux = read_kurucz_sed(test_sed)
 
@@ -256,8 +259,10 @@ def main():
 
     test_sed = "ck04models/ckp00/ckp00_4500.fits[g40]"
     test_sed = "ck04models/ckm25/ckm25_8000.fits[g25]"
+    test_sed = "ck04models/ckm05/ckm05_10000.fits[g20]"
 
     wave_hst , flux_hst = read_ck04models(test_sed)
+    print np.max(flux_hst)
 
 
 
