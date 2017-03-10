@@ -7,8 +7,9 @@ from  astropy.io import fits
 from astropy import units
 import matplotlib.pyplot as plt
 import numpy as np
-
-
+import time
+import pickle
+from scipy.interpolate import griddata
 
 c = 29979245800.0 * units.cm / units.s
 DISTANCE = 1. * units.kpc
@@ -186,10 +187,12 @@ def oplotseds2():
     plt.show()
 
 
-def read_grid_parameters():
+def read_grid_parameters(val_type = 'float32'):
     data_grid = fits.getdata("ck04models/catalog.fits")
-    sed_grid = np.zeros((0,5))
+    sed_grid = np.zeros((NSEDS*NWAVE,5))
+    t0 = time.time()
     i=0
+    count = 0
     for line in data_grid:
         teff, met, logg = line['INDEX'].split(',')
         teff = float(teff)
@@ -202,11 +205,80 @@ def read_grid_parameters():
         else:
             for j in range(len(wave)):
                 #print line['FILENAME'], teff, met, logg, wave[j], flux[j]
-                sed_grid = np.append(sed_grid,[[teff,met,logg,wave[j],flux[j]]],axis=0)
+                sed_grid[count,:] = [teff,met,logg,wave[j],flux[j]]
+                count +=1
         i += 1
+    sed_grid = sed_grid[:count,:].astype(val_type)
+
+    t1 = time.time()
+    total2 = t1-t0
+    print total2
+
+    t0 = time.time()
+    output = open('sed_data.pkl', 'wb')
+    pickle.dump(sed_grid, output,-1)
+    output.close()
+    t1 = time.time()
+    total2 = t1-t0
+    print total2
     return sed_grid
 
 
+def read_grid_pickle():
+    t0 = time.time()
+    inputfile = open('sed_data.pkl', 'rb')
+    sed_grid = pickle.load(inputfile)
+    inputfile.close()
+    t1 = time.time()
+    total3 = t1-t0
+    print total3
+    return sed_grid
+
+
+def get_sed_interpolated(teff, logg, met, sed_grid):
+
+    print "INTERPOLATION"
+    points = sed_grid[:,:3]
+    values = sed_grid[:,4]
+
+    points_i = np.zeros((NWAVE,3))
+    flux = []
+    for i in range(NWAVE):
+        points_i = np.array([teff,logg,met])
+        print points_i.shape, points.shape, values.shape
+        print points_i
+        grid_z2 = griddata(points, values, points_i, method='linear')
+        flux.append(grid_z2)
+
+    return sed_grid[:NWAVE,3], np.array(flux)
+
+def get_sed_interpolated_cube(teff, logg, met, sed_grid):
+    teff_u = np.unique(sed_grid[:,0])
+    met_u = np.unique(sed_grid[:,1])
+    logg_u = np.unique(sed_grid[:,2])
+    print teff_u
+    print logg_u
+    print met_u
+
+    teff_l = teff_u[np.where(teff_u<teff)[0][-1]]
+    teff_h = teff_u[np.where(teff_u>=teff)[0][0]]
+
+    logg_l = logg_u[np.where(logg_u<logg)[0][-1]]
+    logg_h = logg_u[np.where(logg_u>=logg)[0][0]]
+
+    met_l = met_u[np.where(met_u<met)[0][-1]]
+    met_h = met_u[np.where(met_u>=met)[0][0]]
+
+    
+
+
+
+    print teff_l, teff, teff_h
+    print logg_l, logg, logg_h
+    print met_l, met, met_h
+
+
+    return
 
 
 
@@ -219,17 +291,33 @@ def main():
     http://www.stsci.edu/instruments/observatory/PDF/scs8.rev.pdf
     """
 
+
     print "Hello"
 
-    sed_grid = read_grid_parameters()
+#    sed_grid = read_grid_parameters()
+    sed_grid = read_grid_pickle()
+    print sed_grid.dtype
     print sed_grid.shape
+
+    get_sed_interpolated_cube(5777, 4.44, 0.0, sed_grid)
+    return
+
+
     ised = 0
     print sed_grid[ised*NWAVE]
     print ised*NWAVE, (ised+1)*NWAVE
     wave = sed_grid[ised*NWAVE:(ised+1)*NWAVE,3]
     flux = sed_grid[ised*NWAVE:(ised+1)*NWAVE,4]
     wave, flux = get_sed_units(wave,flux)
+
+    flux_test_arr = flux.copy()
     plot_sed(wave, flux)
+
+
+    wave_i, flux_i = get_sed_interpolated(5777, 4.44, 0.0, sed_grid)
+    wave, flux = get_sed_units(wave_i,flux_i)
+    plot_sed(wave, flux)
+
 #    return
 #    oplotseds2()
 #    return
@@ -267,6 +355,11 @@ def main():
 
 
     plot_sed(wave_hst, flux_hst)
+
+    print flux_hst.shape
+    print flux_test_arr.shape
+
+    plot_sed(wave_hst, flux_hst-flux_test_arr)
   
 
 if __name__ == "__main__":
