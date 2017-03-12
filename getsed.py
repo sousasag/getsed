@@ -252,10 +252,21 @@ def get_sed_interpolated(teff, logg, met, sed_grid):
 
     return sed_grid[:NWAVE,3], np.array(flux)
 
-def get_sed_interpolated_cube(teff, logg, met, sed_grid):
-    teff_u = np.unique(sed_grid[:,0])
-    met_u = np.unique(sed_grid[:,1])
-    logg_u = np.unique(sed_grid[:,2])
+def get_sed_interpolated_cube(teff, logg, met):
+    data_grid = fits.getdata("ck04models/catalog.fits")
+
+    teffv = []
+    metv = []
+    loggv = []
+    for line in data_grid:
+        teffi, meti, loggi = line['INDEX'].split(',')
+        teffv.append(float(teffi))
+        metv.append(float(meti))
+        loggv.append(float(loggi))
+    teff_u = np.unique(teffv)
+    met_u = np.unique(metv)
+    logg_u = np.unique(loggv)
+
     print teff_u
     print logg_u
     print met_u
@@ -263,21 +274,44 @@ def get_sed_interpolated_cube(teff, logg, met, sed_grid):
     teff_l = teff_u[np.where(teff_u<teff)[0][-1]]
     teff_h = teff_u[np.where(teff_u>=teff)[0][0]]
 
-    logg_l = logg_u[np.where(logg_u<logg)[0][-1]]
-    logg_h = logg_u[np.where(logg_u>=logg)[0][0]]
-
     met_l = met_u[np.where(met_u<met)[0][-1]]
     met_h = met_u[np.where(met_u>=met)[0][0]]
 
-    
-
-
+    logg_l = logg_u[np.where(logg_u<logg)[0][-1]]
+    logg_h = logg_u[np.where(logg_u>=logg)[0][0]]
+        
 
     print teff_l, teff, teff_h
-    print logg_l, logg, logg_h
     print met_l, met, met_h
+    print logg_l, logg, logg_h
 
+    list_cube = [(teff_l, met_l, logg_l),(teff_l, met_l, logg_h),
+                 (teff_l, met_h, logg_l),(teff_l, met_h, logg_h),
+                 (teff_h, met_l, logg_l),(teff_h, met_l, logg_h),
+                 (teff_h, met_h, logg_l),(teff_h, met_h, logg_h)]
 
+    list_sed = []
+    for t,m,l in list_cube:
+        if m >=0:
+            sm = "p%02d" % int(abs(m)*10.)
+        else:
+            sm = "m%02d" % int(abs(m)*10.)
+        sl = "%2d" % int(l*10.)
+        if t > 9999:
+            st = "%5d" % int(t)
+        else:
+            st = "%4d" % int(t)
+        print t,m,l    
+        print st, sm, sl
+        file_name = "ck04models/ck"+sm+"/ck"+sm+"_"+st+".fits[g"+sl+"]"
+        print file_name
+        wave, flux = read_ck04models(file_name)
+        list_sed.append((wave,flux))
+        plt.plot(wave,flux)
+    plt.show()
+
+    
+    
     return
 
 
@@ -299,7 +333,7 @@ def main():
     print sed_grid.dtype
     print sed_grid.shape
 
-    get_sed_interpolated_cube(5777, 4.44, 0.0, sed_grid)
+    get_sed_interpolated_cube(5777, 4.44, 0.0)
     return
 
 
