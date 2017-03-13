@@ -45,4 +45,4 @@ wave, flux = getsed.get_sed_interpolated_cube(5777, 0.0, 4.4)
 getsed.plot_sed(wave,flux)
 ```
 
-![alt tag](https://github.com/sousasag/getsed/blob/master/example_sed.jpg]
+![alt tag](https://github.com/sousasag/getsed/blob/master/example_sed.jpg)
