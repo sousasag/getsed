@@ -10,6 +10,7 @@ import numpy as np
 import time
 import pickle
 from scipy.interpolate import griddata
+from scipy.interpolate import RegularGridInterpolator
 
 c = 29979245800.0 * units.cm / units.s
 DISTANCE = 1. * units.kpc
@@ -252,11 +253,11 @@ def get_sed_interpolated(teff, logg, met, sed_grid):
 
     return sed_grid[:NWAVE,3], np.array(flux)
 
-def get_sed_interpolated_cube(teff, logg, met):
-    data_grid = fits.getdata("ck04models/catalog.fits")
+def get_sed_interpolated_cube(teff, met, logg):
 
+    data_grid = fits.getdata("ck04models/catalog.fits")
     teffv = []
-    metv = []
+    metv  = []
     loggv = []
     for line in data_grid:
         teffi, meti, loggi = line['INDEX'].split(',')
@@ -267,20 +268,13 @@ def get_sed_interpolated_cube(teff, logg, met):
     met_u = np.unique(metv)
     logg_u = np.unique(loggv)
 
-    print teff_u
-    print logg_u
-    print met_u
-
+# Getting the points of the cube to interpolate
     teff_l = teff_u[np.where(teff_u<teff)[0][-1]]
     teff_h = teff_u[np.where(teff_u>=teff)[0][0]]
-
     met_l = met_u[np.where(met_u<met)[0][-1]]
     met_h = met_u[np.where(met_u>=met)[0][0]]
-
     logg_l = logg_u[np.where(logg_u<logg)[0][-1]]
     logg_h = logg_u[np.where(logg_u>=logg)[0][0]]
-        
-
     print teff_l, teff, teff_h
     print met_l, met, met_h
     print logg_l, logg, logg_h
@@ -290,6 +284,7 @@ def get_sed_interpolated_cube(teff, logg, met):
                  (teff_h, met_l, logg_l),(teff_h, met_l, logg_h),
                  (teff_h, met_h, logg_l),(teff_h, met_h, logg_h)]
 
+# Reading the seds in the cube
     list_sed = []
     for t,m,l in list_cube:
         if m >=0:
@@ -301,18 +296,41 @@ def get_sed_interpolated_cube(teff, logg, met):
             st = "%5d" % int(t)
         else:
             st = "%4d" % int(t)
-        print t,m,l    
-        print st, sm, sl
         file_name = "ck04models/ck"+sm+"/ck"+sm+"_"+st+".fits[g"+sl+"]"
-        print file_name
-        wave, flux = read_ck04models(file_name)
+        wave, flux = read_ck04models_numbers(file_name)
+        if np.all(flux == 0):
+            print "Problem with sed: ", file_name
+            raise ValueError('Sed in interpolation cube with zero flux values')
         list_sed.append((wave,flux))
-        plt.plot(wave,flux)
-    plt.show()
 
-    
-    
-    return
+
+# Interpolating the sed
+    wave_i = []
+    flux_i = []
+    t = np.linspace(teff_l, teff_h, 2)
+    m = np.linspace(met_l, met_h, 2)
+    l = np.linspace(logg_l, logg_h, 2)
+    V = np.zeros((2,2,2))
+    pt = (teff, met, logg)
+
+    for i in range(NWAVE):
+        V[0,0,0] = list_sed[0][1][i]
+        V[0,0,1] = list_sed[1][1][i]
+        V[0,1,0] = list_sed[2][1][i]
+        V[0,1,1] = list_sed[3][1][i]
+        V[1,0,0] = list_sed[4][1][i]
+        V[1,0,1] = list_sed[5][1][i]
+        V[1,1,0] = list_sed[6][1][i]
+        V[1,1,1] = list_sed[7][1][i]
+        fn = RegularGridInterpolator((t,m,l), V)
+        flux_i.append(fn(pt))
+        wave_i.append(list_sed[0][0][i])
+    wave_i = np.array(wave_i)
+    flux_i = np.array(flux_i)
+
+    return wave_i, flux_i
+
+
 
 
 
@@ -333,7 +351,24 @@ def main():
     print sed_grid.dtype
     print sed_grid.shape
 
-    get_sed_interpolated_cube(5777, 4.44, 0.0)
+    wave_i, flux_i = get_sed_interpolated_cube(8075, 0.35, 4.9)
+
+    wave_t, flux_t = np.loadtxt('kuruczbm.dat', unpack = True)
+
+    scale = np.mean(flux_i)/np.mean(flux_t)
+
+
+
+
+    print wave_i.shape
+    print flux_i.shape
+
+    plt.plot(wave_i, flux_i, linewidth=3, color='k')
+    plt.plot(wave_t, flux_t * scale, linewidth=3, color='g')
+    plt.xlim(3000,11000)
+    plt.show()
+
+
     return
 
 
