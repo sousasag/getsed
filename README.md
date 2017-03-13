@@ -20,6 +20,7 @@ tar xvf models_kurucz_05sep11.tgz
 ```
 wget -r ftp://ftp.stsci.edu/cdbs/grid/ck04models
 mv ftp.stsci.edu/cdbs/grid/ck04models ../
+rm -rf ftp.stsci.edu
 ```
 
 ## Using the code
@@ -39,6 +40,11 @@ import sys
 sys.path.append('/my/path/to/getsed/')
 import getsed
 
-wave, flux = get_sed_interpolated_cube(5777, 0.0, 4.4)
+wave, flux = getsed.get_sed_interpolated_cube(5777, 0.0, 4.4)
+
+getsed.plot_sed(wave,flux)
 ```
 
+[example_sed]
+
+[example_sed]: https://github.com/sousasag/getsed/example_sed.jpg
