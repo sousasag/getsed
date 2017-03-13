@@ -47,4 +47,4 @@ getsed.plot_sed(wave,flux)
 
 [example_sed]
 
-[example_sed]: https://github.com/sousasag/getsed/example_sed.jpg
+[example_sed]: https://github.com/sousasag/getsed/blob/master/example_sed.jpg
