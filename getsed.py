@@ -1,5 +1,13 @@
 #!/usr/bin/python
-## Addapted from https://sedfitter.readthedocs.io
+## some functions were addapted from https://sedfitter.readthedocs.io
+## other grid taken from 
+#    ftp://ftp.stsci.edu/cdbs/grid/ck04models/AA_README
+#    ftp://ftp.stsci.edu/cdbs/grid/ck04models
+#    http://www.stsci.edu/hst/observatory/crds/castelli_kurucz_atlas.html
+#    http://www.stsci.edu/instruments/observatory/PDF/scs8.rev.pdf
+
+
+DIR_SED = "/home/sousasag/Programas/GIT_projects/getsed/"
 
 ##imports:
 
@@ -9,13 +17,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import pickle
-from scipy.interpolate import griddata
 from scipy.interpolate import RegularGridInterpolator
 
 c = 29979245800.0 * units.cm / units.s
 DISTANCE = 1. * units.kpc
-PATH_SED = "/home/sousasag/Programas/GIT_projects/getsed/models_kurucz/seds/"
-
 
 NSEDS = 6688
 NWAVE = 1221
@@ -23,9 +28,7 @@ NWAVE = 1221
 ## My functions:
 
 def change_flux(flux_Jy, wave):
-
     """
-
     test with change_flux(3836, 550)
 
     https://www.gemini.edu/cgi-bin/sciops/instruments/michelle/magnitudes.pl?magnitude=9.978&wavelength=550&filter=Johnson+V&option=magnitude
@@ -77,6 +80,10 @@ def parse_units(unit_str):
         return units.AU
 
 def read_ck04models_numbers(filename):
+    """
+    Read a model from a fits file sed kurucz model
+
+    """
     grav = filename.split('[')[-1].replace("]","")
     filein = filename.split('[')[0]
     data = fits.getdata(filein)
@@ -87,6 +94,9 @@ def read_ck04models_numbers(filename):
     return wave, flux
 
 def get_sed_units(wave,flux):
+    """
+    From the numbers read in ck04models and it adds units to the data
+    """
     wave = wave * units.angstrom
     flux = flux * units.erg / units.cm**2 / units.s / units.angstrom
     return wave, flux    
@@ -94,6 +104,10 @@ def get_sed_units(wave,flux):
 
 def read_ck04models(filename):
     """
+    Read a sed model in ck04models with units in the data (check Note)
+
+    Note:
+
     Physical fluxes of the spectra are given in FLAM surface flux units, 
     i.e. ergs cm^{-2} s^{-1} A^{-1}. These flux units differ from those in 
     the Castelli & Kurucz tables by a factor of 3.336 x 10^{-19} x lambda^{2} 
@@ -108,6 +122,11 @@ def read_ck04models(filename):
 
 
 def read_kurucz_sed(filename):
+    """
+    Read a sed model in kurucz models (as in sed fitter)
+
+    """
+
     hdulist = fits.open(filename, memmap=False)
 
     wave_unit = hdulist[1].columns[0].unit
@@ -122,43 +141,41 @@ def read_kurucz_sed(filename):
     flux = hdulist[3].data.field("TOTAL_FLUX")[0] * parse_units(flux_unit)
     flux_er = hdulist[3].data.field("TOTAL_FLUX_ERR")[0] * parse_units(flux_er_unit)
 
-
     #conversion of units to Angstrom and erg sec-1 cm-2 A-1
-
     flux = flux.to(units.Jy)
     flux_c = flux * c / wave.to(units.cm)**2
     flux_c = flux_c.to(units.erg / units.s / units.cm**2 / units.angstrom)
 
     wave_a = wave.to(units.angstrom)
-
-    flux_d = flux_c 
-
     return wave_a, flux_c
 
 
-
-
-
 def plot_sed(wave, flux):
+    """
+    simple plot of the sed model in range 3000-10000 Angstrom
+    """
     plt.plot(wave, flux)
     plt.xlim(3000,10000)
     plt.show()
 
 
 def oplotseds():
-    test_sed = "models_kurucz/seds/kt06000g+4.5z+0.0_sed.fits.gz"
+    """
+    Replicate (out scalled) Fig 2.  Effective Temperature Determination (Niemczura book wroclaw)
+    """
+    test_sed = DIR_SED + "models_kurucz/seds/kt06000g+4.5z+0.0_sed.fits.gz"
     wave,flux = read_kurucz_sed(test_sed)
     plt.plot(wave, flux)
-    test_sed = "models_kurucz/seds/kt06500g+4.5z+0.0_sed.fits.gz"
+    test_sed = DIR_SED + "models_kurucz/seds/kt06500g+4.5z+0.0_sed.fits.gz"
     wave,flux = read_kurucz_sed(test_sed)
     plt.plot(wave, flux)
-    test_sed = "models_kurucz/seds/kt07000g+4.5z+0.0_sed.fits.gz"
+    test_sed = DIR_SED + "models_kurucz/seds/kt07000g+4.5z+0.0_sed.fits.gz"
     wave,flux = read_kurucz_sed(test_sed)
     plt.plot(wave, flux)
-    test_sed = "models_kurucz/seds/kt07500g+4.5z+0.0_sed.fits.gz"
+    test_sed = DIR_SED + "models_kurucz/seds/kt07500g+4.5z+0.0_sed.fits.gz"
     wave,flux = read_kurucz_sed(test_sed)
     plt.plot(wave, flux)
-    test_sed = "models_kurucz/seds/kt08000g+4.5z+0.0_sed.fits.gz"
+    test_sed = DIR_SED + "models_kurucz/seds/kt08000g+4.5z+0.0_sed.fits.gz"
     wave,flux = read_kurucz_sed(test_sed)
     plt.plot(wave, flux)
     plt.xlim(3000,10000)
@@ -169,27 +186,30 @@ def oplotseds2():
     """
     Replicate Fig 2.  Effective Temperature Determination (Niemczura book wroclaw)
     """
-    test_sed = "ck04models/ckp00/ckp00_6000.fits[g45]"
+    test_sed = DIR_SED + "ck04models/ckp00/ckp00_6000.fits[g45]"
     wave,flux = read_ck04models(test_sed)
     plt.plot(wave, flux)
-    test_sed = "ck04models/ckp00/ckp00_6500.fits[g45]"
+    test_sed = DIR_SED + "ck04models/ckp00/ckp00_6500.fits[g45]"
     wave,flux = read_ck04models(test_sed)
     plt.plot(wave, flux)
-    test_sed = "ck04models/ckp00/ckp00_7000.fits[g45]"
+    test_sed = DIR_SED + "ck04models/ckp00/ckp00_7000.fits[g45]"
     wave,flux = read_ck04models(test_sed)
     plt.plot(wave, flux)
-    test_sed = "ck04models/ckp00/ckp00_7500.fits[g45]"
+    test_sed = DIR_SED + "ck04models/ckp00/ckp00_7500.fits[g45]"
     wave,flux = read_ck04models(test_sed)
     plt.plot(wave, flux)
-    test_sed = "ck04models/ckp00/ckp00_8000.fits[g45]"
+    test_sed = DIR_SED + "ck04models/ckp00/ckp00_8000.fits[g45]"
     wave,flux = read_ck04models(test_sed)
     plt.plot(wave, flux)
     plt.xlim(3000,10000)
     plt.show()
 
 
-def read_grid_parameters(val_type = 'float32'):
-    data_grid = fits.getdata("ck04models/catalog.fits")
+def read_save_grid(filebin = 'sed_data.pkl', val_type = 'float32'):
+    """
+    Read from fits and writting the fill sed grid into a single binary file
+    """
+    data_grid = fits.getdata(DIR_SED + "ck04models/catalog.fits")
     sed_grid = np.zeros((NSEDS*NWAVE,5))
     t0 = time.time()
     i=0
@@ -199,7 +219,7 @@ def read_grid_parameters(val_type = 'float32'):
         teff = float(teff)
         met  = float(met)
         logg = float(logg)
-        wave, flux = read_ck04models_numbers('ck04models/'+line['FILENAME'])
+        wave, flux = read_ck04models_numbers(DIR_SED + 'ck04models/'+line['FILENAME'])
         print i, len(data_grid),line['INDEX'], line['FILENAME'], teff, met, logg,len(wave), wave[0]
         if np.all(flux == 0):
             print "skipping zero flux sed:"
@@ -225,9 +245,12 @@ def read_grid_parameters(val_type = 'float32'):
     return sed_grid
 
 
-def read_grid_pickle():
+def read_grid_pickle(filebin = 'sed_data.pkl'):
+    """
+    read a binary file with the grid created by the read_save_grid function
+    """
     t0 = time.time()
-    inputfile = open('sed_data.pkl', 'rb')
+    inputfile = open(filebin, 'rb')
     sed_grid = pickle.load(inputfile)
     inputfile.close()
     t1 = time.time()
@@ -236,26 +259,25 @@ def read_grid_pickle():
     return sed_grid
 
 
-def get_sed_interpolated(teff, logg, met, sed_grid):
 
-    print "INTERPOLATION"
-    points = sed_grid[:,:3]
-    values = sed_grid[:,4]
-
-    points_i = np.zeros((NWAVE,3))
-    flux = []
-    for i in range(NWAVE):
-        points_i = np.array([teff,logg,met])
-        print points_i.shape, points.shape, values.shape
-        print points_i
-        grid_z2 = griddata(points, values, points_i, method='linear')
-        flux.append(grid_z2)
-
-    return sed_grid[:NWAVE,3], np.array(flux)
 
 def get_sed_interpolated_cube(teff, met, logg):
+    """
+    Returns an interpolated sed model:
 
-    data_grid = fits.getdata("ck04models/catalog.fits")
+    Args:
+        teff: effective temperature
+        met: metallicity
+        logg: surface gravity
+
+    Return:
+        wave, flux - tuple with numpy array with the interpolated sed
+
+    Examples:
+        >>> wave, flux = get_sed_interpolated_cube(5777, 0, 4.44)
+    """
+
+    data_grid = fits.getdata(DIR_SED + "ck04models/catalog.fits")
     teffv = []
     metv  = []
     loggv = []
@@ -296,7 +318,7 @@ def get_sed_interpolated_cube(teff, met, logg):
             st = "%5d" % int(t)
         else:
             st = "%4d" % int(t)
-        file_name = "ck04models/ck"+sm+"/ck"+sm+"_"+st+".fits[g"+sl+"]"
+        file_name = DIR_SED + "ck04models/ck"+sm+"/ck"+sm+"_"+st+".fits[g"+sl+"]"
         wave, flux = read_ck04models_numbers(file_name)
         if np.all(flux == 0):
             print "Problem with sed: ", file_name
@@ -332,6 +354,46 @@ def get_sed_interpolated_cube(teff, met, logg):
 
 
 
+def test_interpolation():
+    """
+    Compare this interpolation with a 
+    previous interpolation generated with iuerdaf kurget
+    """
+    wave_i, flux_i = get_sed_interpolated_cube(8075, 0.35, 4.9)
+    wave_t, flux_t = np.loadtxt(DIR_SED + 'kuruczbm.dat', unpack = True)
+    scale = np.mean(flux_i)/np.mean(flux_t)
+#    plt.plot(wave_i, flux_i, linewidth=3, color='k')
+#    plt.plot(wave_t, flux_t * scale, linewidth=3, color='g')
+    plt.plot(wave_i, (flux_i - flux_t*scale)/flux_i)
+    plt.xlim(3000,11000)
+    plt.show()
+
+
+def compare_grids():
+    """
+    compare the 2 format grids
+    """
+    test_sed = DIR_SED + "models_kurucz/seds/kt08000g+2.5z-2.5_sed.fits.gz"
+
+    wave_1,flux_1 = read_kurucz_sed(test_sed)
+    wave_1 = wave_1[:NWAVE]
+    flux_1 = flux_1[:NWAVE]
+
+    test_sed = DIR_SED + "ck04models/ckm25/ckm25_8000.fits[g25]"
+
+    wave_2, flux_2 = read_ck04models(test_sed)
+
+    scale = np.mean(flux_2)/np.mean(flux_1)
+
+
+
+#    print flux_1.shape, flux_2.shape
+#    print (flux_1 - flux_2)[300:600]
+#    plt.plot(wave_2, flux_2, linewidth=3, color='k')
+#    plt.plot(wave_1, flux_1 * scale, linewidth=3, color='g')
+    plt.plot(wave_1, (flux_2 - flux_1 * scale)/flux_2)
+    plt.xlim(3000,11000)
+    plt.show()
 
 
 ### Main program:
@@ -342,93 +404,17 @@ def main():
     http://www.stsci.edu/hst/observatory/crds/castelli_kurucz_atlas.html
     http://www.stsci.edu/instruments/observatory/PDF/scs8.rev.pdf
     """
-
-
     print "Hello"
 
-#    sed_grid = read_grid_parameters()
-    sed_grid = read_grid_pickle()
-    print sed_grid.dtype
-    print sed_grid.shape
-
-    wave_i, flux_i = get_sed_interpolated_cube(8075, 0.35, 4.9)
-
-    wave_t, flux_t = np.loadtxt('kuruczbm.dat', unpack = True)
-
-    scale = np.mean(flux_i)/np.mean(flux_t)
-
-
-
-
-    print wave_i.shape
-    print flux_i.shape
-
-    plt.plot(wave_i, flux_i, linewidth=3, color='k')
-    plt.plot(wave_t, flux_t * scale, linewidth=3, color='g')
-    plt.xlim(3000,11000)
-    plt.show()
-
-
-    return
-
-
-    ised = 0
-    print sed_grid[ised*NWAVE]
-    print ised*NWAVE, (ised+1)*NWAVE
-    wave = sed_grid[ised*NWAVE:(ised+1)*NWAVE,3]
-    flux = sed_grid[ised*NWAVE:(ised+1)*NWAVE,4]
-    wave, flux = get_sed_units(wave,flux)
-
-    flux_test_arr = flux.copy()
-    plot_sed(wave, flux)
-
-
-    wave_i, flux_i = get_sed_interpolated(5777, 4.44, 0.0, sed_grid)
-    wave, flux = get_sed_units(wave_i,flux_i)
-    plot_sed(wave, flux)
-
+#    compare_grids()
+#    return
+#    test_interpolation()
+#    return
+#    oplotseds()
 #    return
 #    oplotseds2()
 #    return
 
-
-    flux_Vega = 3836
-    ll = 550 * units.nm
-    change_flux(flux_Vega, ll)
-
-    flux_test = 0.391483
-    change_flux(flux_test, ll)
-
-    test_sed = "models_kurucz/seds/kt07250g+4.5z+0.0_sed.fits.gz"
-    test_sed = "models_kurucz/seds/kt08000g+2.5z-2.5_sed.fits.gz"
-    test_sed = "models_kurucz/seds/kt04500g+4.0z+0.0_sed.fits.gz"
-    test_sed = "models_kurucz/seds/kt10000g+2.0z-0.5_sed.fits.gz"
-
-    wave,flux = read_kurucz_sed(test_sed)
-
-    wave_n = wave.to(units.nm)
-    flux_n = flux.to(units.erg / units.s / units.cm**2 / units.nm)
-
-    flux_n = flux 
-
-    plot_sed(wave, flux)
-
-
-    test_sed = "ck04models/ckp00/ckp00_4500.fits[g40]"
-    test_sed = "ck04models/ckm25/ckm25_8000.fits[g25]"
-    test_sed = "ck04models/ckm05/ckm05_10000.fits[g20]"
-
-    wave_hst , flux_hst = read_ck04models(test_sed)
-    print np.max(flux_hst)
-
-
-
-    plot_sed(wave_hst, flux_hst)
-
-    print flux_hst.shape
-    print flux_test_arr.shape
-
-    plot_sed(wave_hst, flux_hst-flux_test_arr)
   
 
 if __name__ == "__main__":
