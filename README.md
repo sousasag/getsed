@@ -19,7 +19,7 @@ tar xvf models_kurucz_05sep11.tgz
 ### stsci ck04 models
 ```
 wget -r ftp://ftp.stsci.edu/cdbs/grid/ck04models
-mv ftp.stsci.edu/cdbs/grid/ck04models ../
+mv ftp.stsci.edu/cdbs/grid/ck04models .
 rm -rf ftp.stsci.edu
 ```
 
