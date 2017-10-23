@@ -361,10 +361,27 @@ def test_interpolation():
     """
     wave_i, flux_i = get_sed_interpolated_cube(8075, 0.35, 4.9)
     wave_t, flux_t = np.loadtxt(DIR_SED + 'kuruczbm.dat', unpack = True)
+
+    thetarad=0.275e-3/3600.*np.pi/180. 
     scale = np.mean(flux_i)/np.mean(flux_t)
+
+
+    flux_i*= (thetarad/2.)**(2.)
+
+    fileout = open("mineintsed.dat", "w")
+    for i in range(len(wave_i)):
+        fileout.write("  %e   %e\n" % (wave_i[i],flux_i[i]))
+    fileout.close()
+
+    print (thetarad/2.)**(2.), 1./(thetarad/2.)**(2.), scale
+
 #    plt.plot(wave_i, flux_i, linewidth=3, color='k')
 #    plt.plot(wave_t, flux_t * scale, linewidth=3, color='g')
-    plt.plot(wave_i, (flux_i - flux_t*scale)/flux_i)
+#    plt.plot(wave_t, flux_t, linewidth=3, color='g')
+
+#    plt.plot(wave_i, (flux_i - flux_t*scale)/flux_i)
+    plt.plot(wave_i, (flux_i - flux_t)/flux_i)
+
     plt.xlim(3000,11000)
     plt.show()
 
@@ -408,7 +425,7 @@ def main():
 
 #    compare_grids()
 #    return
-#    test_interpolation()
+    test_interpolation()
 #    return
 #    oplotseds()
 #    return
