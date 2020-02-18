@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ## some functions were addapted from https://sedfitter.readthedocs.io
-## other grid taken from 
+## other grid taken from
 #    ftp://ftp.stsci.edu/cdbs/grid/ck04models/AA_README
 #    ftp://ftp.stsci.edu/cdbs/grid/ck04models
 #    http://www.stsci.edu/hst/observatory/crds/castelli_kurucz_atlas.html
@@ -49,19 +49,19 @@ def change_flux(flux_Jy, wave):
 
     c = 29979245800.0 * units.cm / units.s
 
-    print flux_Jy
-    print wave
-    print c
+    print(flux_Jy)
+    print(wave)
+    print(c)
 
     Fn = flux_Jy.to(units.erg / units.s / units.cm**2 / units.Hz)
     Fl = Fn * c / wave**2.
     Fl = Fl.to(units.watt / units.m**2 / units.micron)
-    print Fl
+    print (Fl)
     Fl = Fl.to(units.erg / units.s / units.cm**2 / units.angstrom)
     lFl = Fl * wave
     lFl = lFl.to(units.watt / units.m **2)
-    print Fl
-    print lFl
+    print(Fl)
+    print(lFl)
 
 
 
@@ -87,8 +87,8 @@ def read_ck04models_numbers(filename):
     grav = filename.split('[')[-1].replace("]","")
     filein = filename.split('[')[0]
     data = fits.getdata(filein)
-    print "reading: ", filein
-    print "gravity: ", grav
+    print ("reading: ", filein)
+    print ("gravity: ", grav)
     wave = data['WAVELENGTH']
     flux = data[grav]
     return wave, flux
@@ -99,7 +99,7 @@ def get_sed_units(wave,flux):
     """
     wave = wave * units.angstrom
     flux = flux * units.erg / units.cm**2 / units.s / units.angstrom
-    return wave, flux    
+    return wave, flux
 
 
 def read_ck04models(filename):
@@ -108,13 +108,13 @@ def read_ck04models(filename):
 
     Note:
 
-    Physical fluxes of the spectra are given in FLAM surface flux units, 
-    i.e. ergs cm^{-2} s^{-1} A^{-1}. These flux units differ from those in 
-    the Castelli & Kurucz tables by a factor of 3.336 x 10^{-19} x lambda^{2} 
-    x (4pi)^{-1}, i.e. are converted from ergs cm^{-2} s^{-1} Hz^{-1}steradian^{-1} 
-    to ergs cm^{-2} s^{-1} A^{-1} by mutiplying the Castelli & Kurucz values by 
-    3.336 x 10^{-19} x lambda^{2} x (4pi)^{-1}, where lambda is in Angstroms. To 
-    convert to observed flux at Earth, multiply by a factor of (R/D)^2 where R is 
+    Physical fluxes of the spectra are given in FLAM surface flux units,
+    i.e. ergs cm^{-2} s^{-1} A^{-1}. These flux units differ from those in
+    the Castelli & Kurucz tables by a factor of 3.336 x 10^{-19} x lambda^{2}
+    x (4pi)^{-1}, i.e. are converted from ergs cm^{-2} s^{-1} Hz^{-1}steradian^{-1}
+    to ergs cm^{-2} s^{-1} A^{-1} by mutiplying the Castelli & Kurucz values by
+    3.336 x 10^{-19} x lambda^{2} x (4pi)^{-1}, where lambda is in Angstroms. To
+    convert to observed flux at Earth, multiply by a factor of (R/D)^2 where R is
     the stellar radius, and D is the distance to Earth.
     """
     wave, flux = read_ck04models_numbers(filename)
@@ -220,9 +220,9 @@ def read_save_grid(filebin = 'sed_data.pkl', val_type = 'float32'):
         met  = float(met)
         logg = float(logg)
         wave, flux = read_ck04models_numbers(DIR_SED + 'ck04models/'+line['FILENAME'])
-        print i, len(data_grid),line['INDEX'], line['FILENAME'], teff, met, logg,len(wave), wave[0]
+        print (i, len(data_grid),line['INDEX'], line['FILENAME'], teff, met, logg,len(wave), wave[0])
         if np.all(flux == 0):
-            print "skipping zero flux sed:"
+            print ("skipping zero flux sed:")
         else:
             for j in range(len(wave)):
                 #print line['FILENAME'], teff, met, logg, wave[j], flux[j]
@@ -233,7 +233,7 @@ def read_save_grid(filebin = 'sed_data.pkl', val_type = 'float32'):
 
     t1 = time.time()
     total2 = t1-t0
-    print total2
+    print (total2)
 
     t0 = time.time()
     output = open('sed_data.pkl', 'wb')
@@ -241,7 +241,7 @@ def read_save_grid(filebin = 'sed_data.pkl', val_type = 'float32'):
     output.close()
     t1 = time.time()
     total2 = t1-t0
-    print total2
+    print (total2)
     return sed_grid
 
 
@@ -255,7 +255,7 @@ def read_grid_pickle(filebin = 'sed_data.pkl'):
     inputfile.close()
     t1 = time.time()
     total3 = t1-t0
-    print total3
+    print (total3)
     return sed_grid
 
 
@@ -297,9 +297,9 @@ def get_sed_interpolated_cube(teff, met, logg):
     met_h = met_u[np.where(met_u>=met)[0][0]]
     logg_l = logg_u[np.where(logg_u<logg)[0][-1]]
     logg_h = logg_u[np.where(logg_u>=logg)[0][0]]
-    print teff_l, teff, teff_h
-    print met_l, met, met_h
-    print logg_l, logg, logg_h
+    print (teff_l, teff, teff_h)
+    print (met_l, met, met_h)
+    print (logg_l, logg, logg_h)
 
     list_cube = [(teff_l, met_l, logg_l),(teff_l, met_l, logg_h),
                  (teff_l, met_h, logg_l),(teff_l, met_h, logg_h),
@@ -321,7 +321,7 @@ def get_sed_interpolated_cube(teff, met, logg):
         file_name = DIR_SED + "ck04models/ck"+sm+"/ck"+sm+"_"+st+".fits[g"+sl+"]"
         wave, flux = read_ck04models_numbers(file_name)
         if np.all(flux == 0):
-            print "Problem with sed: ", file_name
+            print ("Problem with sed: ", file_name)
             raise ValueError('Sed in interpolation cube with zero flux values')
         list_sed.append((wave,flux))
 
@@ -356,13 +356,13 @@ def get_sed_interpolated_cube(teff, met, logg):
 
 def test_interpolation():
     """
-    Compare this interpolation with a 
+    Compare this interpolation with a
     previous interpolation generated with iuerdaf kurget
     """
     wave_i, flux_i = get_sed_interpolated_cube(8075, 0.35, 4.9)
     wave_t, flux_t = np.loadtxt(DIR_SED + 'kuruczbm.dat', unpack = True)
 
-    thetarad=0.275e-3/3600.*np.pi/180. 
+    thetarad=0.275e-3/3600.*np.pi/180.
     scale = np.mean(flux_i)/np.mean(flux_t)
 
 
@@ -373,7 +373,7 @@ def test_interpolation():
         fileout.write("  %e   %e\n" % (wave_i[i],flux_i[i]))
     fileout.close()
 
-    print (thetarad/2.)**(2.), 1./(thetarad/2.)**(2.), scale
+    print ((thetarad/2.)**(2.), 1./(thetarad/2.)**(2.), scale)
 
 #    plt.plot(wave_i, flux_i, linewidth=3, color='k')
 #    plt.plot(wave_t, flux_t * scale, linewidth=3, color='g')
@@ -421,7 +421,7 @@ def main():
     http://www.stsci.edu/hst/observatory/crds/castelli_kurucz_atlas.html
     http://www.stsci.edu/instruments/observatory/PDF/scs8.rev.pdf
     """
-    print "Hello"
+    print ("Hello")
 
 #    compare_grids()
 #    return
@@ -432,8 +432,7 @@ def main():
 #    oplotseds2()
 #    return
 
-  
+
 
 if __name__ == "__main__":
     main()
-
