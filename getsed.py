@@ -150,12 +150,12 @@ def read_kurucz_sed(filename):
     return wave_a, flux_c
 
 
-def plot_sed(wave, flux):
+def plot_sed(wave, flux,xi=3000,xf=10000):
     """
     simple plot of the sed model in range 3000-10000 Angstrom
     """
     plt.plot(wave, flux)
-    plt.xlim(3000,10000)
+    plt.xlim(xi,xf)
     plt.show()
 
 
