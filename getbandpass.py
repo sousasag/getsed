@@ -42,6 +42,18 @@ def get_passband_WISE():
     return tuple(Wi_list)
 
 
+#Table 1 - 2MASS Isophotal Bandpasses and Fluxes-for-0-magnitude from Cohen et al. (2003)
+#Band    Lambda (µm) Bandwidth (µm)  Fnu - 0 mag (Jy)    Flambda - 0 mag (W cm-2 µm-1)
+#J   1.235 ± 0.006   0.162 ± 0.001   1594  ± 27.8    3.129E-13 ± 5.464E-15
+#H   1.662 ± 0.009   0.251 ± 0.002   1024  ± 20.0    1.133E-13 ± 2.212E-15
+#Ks  2.159 ± 0.011   0.262 ± 0.002   666.7 ± 12.6    4.283E-14 ± 8.053E-16
+
+def mag2flux(mag, band):
+    if band == "Ks":
+        wave = 2159
+        zero = 667
+    flux = zero * 10**(mag/2.5)
+    return flux
 
 ### Main program:
 def main():

@@ -54,6 +54,9 @@ def change_flux(flux_Jy, wave):
     print(c)
 
     Fn = flux_Jy.to(units.erg / units.s / units.cm**2 / units.Hz)
+    Fn = Fn.to(units.watt / units.m**2 / units.Hz)
+    print (Fn)
+
     Fl = Fn * c / wave**2.
     Fl = Fl.to(units.watt / units.m**2 / units.micron)
     print (Fl)
@@ -62,7 +65,7 @@ def change_flux(flux_Jy, wave):
     lFl = lFl.to(units.watt / units.m **2)
     print(Fl)
     print(lFl)
-
+#fluxu.to(units.watt / units.nm/ units.m**2)
 
 
 
