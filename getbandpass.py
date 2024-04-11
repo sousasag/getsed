@@ -3,6 +3,8 @@
 ##imports:
 
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
 import numpy as np
 from astropy import units as u
 
