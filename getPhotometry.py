@@ -7,6 +7,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
+from astropy.table import Table
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 
