@@ -4,6 +4,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from astropy import units as u
 
 #JHK
 #https://www.ipac.caltech.edu/2mass/releases/allsky/doc/sec6_4a.html
@@ -41,6 +42,10 @@ def get_passband_WISE():
         Wi_list.append(Wi)
     return tuple(Wi_list)
 
+def get_zeropoints():
+    zeros = np.loadtxt("bandpasses/zero_points_band.txt", skiprows=1, dtype = [('band', '<U8'), ('wave', '<f8'), ('fluxJy', '<f8')])
+    return zeros
+
 
 #Table 1 - 2MASS Isophotal Bandpasses and Fluxes-for-0-magnitude from Cohen et al. (2003)
 #Band    Lambda (µm) Bandwidth (µm)  Fnu - 0 mag (Jy)    Flambda - 0 mag (W cm-2 µm-1)
@@ -48,12 +53,23 @@ def get_passband_WISE():
 #H   1.662 ± 0.009   0.251 ± 0.002   1024  ± 20.0    1.133E-13 ± 2.212E-15
 #Ks  2.159 ± 0.011   0.262 ± 0.002   666.7 ± 12.6    4.283E-14 ± 8.053E-16
 
+
+bands = np.array([])
+
 def mag2flux(mag, band):
-    if band == "Ks":
-        wave = 2159
-        zero = 667
-    flux = zero * 10**(mag/2.5)
-    return flux
+    c = 29979245800.0 * units.cm / units.s
+    zeros = get_zeropoints()
+    line = np.where(band == zeros["band"])[0]
+    wave = zeros["wave"][line]* u.micron
+    fluxzero = zeros["fluxJy"][line]* u.Jy
+    
+    fluxJy = fluxzero * 10**(-0.4*mag)
+    fluxW = fluxJy.to(units.watt / units.m**2 / units.Hz)
+    fluxerg = (fluxJy * c / wave**2.).to(units.erg / units.s / units.cm**2 / units.angstrom)
+
+    return fluxJy, fluxW, fluxerg
+
+
 
 ### Main program:
 def main():
