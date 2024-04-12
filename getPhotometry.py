@@ -11,7 +11,7 @@ from astropy.table import Table
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 import getbandpass as gbp
-
+import getsed
 
 ## My functions:
 
@@ -132,6 +132,7 @@ def get_fluxEarth(gaiaid):
 
 
     bands = ["BP", "G", "RP", "J", "H", "K", "W1", "W2", "W3", "W4"]
+    fluxes = []
     for b in bands:
         if b in ["BP", "G", "RP"]:
             data = data_gaia
@@ -141,12 +142,38 @@ def get_fluxEarth(gaiaid):
             data = data_wise
         wave, fluxJy, fluxW, fluxerg = gbp.mag2flux(data[b+"mag"], b)
         print(b, wave, fluxJy, fluxW, fluxerg)
+        fluxes.append((b, wave, fluxJy, fluxW, fluxerg))
+    return fluxes
+
+
+def get_fluxStar(teff, logg, feh):
+    wave, flux = getsed.get_sed_interpolated_cube(teff, feh, logg)
+    waveu, fluxu = getsed.get_sed_units(wave,flux)
+    c = 29979245800.0 * u.cm / u.s
+    flux = waveu**2/c * fluxu
+    fluxW = flux.to(u.watt/u.m**2/u.Hz)
+    fluxJy = flux.to(u.Jy)
+    return waveu, fluxJy, fluxW, fluxu
+
+def print_fluxes(gaiaid, teff, logg, feh):
+    fluxes = get_fluxEarth(gaiaid)
+    wave_s, fluxJy_s, fluxW_s, fluxu_s = get_fluxStar(teff, logg, feh)
+
+    for b, w, fJym, fW, ferg in fluxes:
+        fWs=fluxW_s[np.where(wave_s >= w.to(u.Angstrom))][0]
+        theta = 2*np.sqrt(fW/fWs)*360*60*60/(2*np.pi)
+        print (b, w, fJym, fW, ferg, fWs, theta)
+
 
 
 ### Main program:
 def main():
     gaiadr2 = get_gaiadr2("HD80606")
     print(gaiadr2)
+    print_fluxes(gaiadr2, 5543, 4.38, 0.31)
+
+
+    return
 
 #    data_gaia = get_gaiaedr3_data(gaiadr2, gaiadr2)
 #    print(data_gaia)
@@ -163,7 +190,7 @@ def main():
     data_wise = get_allwise_data(gaiadr2, idallwise=data_gaia['AllWISE'])
     print(data_wise)
 
-    get_fluxEarth(gaiadr2)
+    fluxes_earth = get_fluxEarth(gaiadr2)
 
 
 
