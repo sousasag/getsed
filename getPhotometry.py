@@ -10,6 +10,7 @@ from astropy import units as u
 from astropy.table import Table
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
+import getbandpass as gbp
 
 
 ## My functions:
@@ -50,27 +51,56 @@ def get_gaiadr2(name):
         gaiadr2 = get_gaia_dr2_id(result_ids)
     return gaiadr2
 
-def get_2mass_data(gaiadr2, name_search=None):
-    vq2mass = Vizier(columns=['RAJ2000', 'DEJ2000','Jmag', 'e_Jmag', 'Hmag', 'e_Hmag', 'Kmag', 'e_Kmag'], row_limit=5000)
+def get_2mass_data(gaiadr2, name_search=None, id2mass=None):
+    vq2mass = Vizier(columns=['2MASS', 'RAJ2000', 'DEJ2000','Jmag', 'e_Jmag', 'Hmag', 'e_Hmag', 'Kmag', 'e_Kmag'], row_limit=5000)
     radius_search = 10.0*u.arcsec
     if name_search is None:
         result_2mass=vq2mass.query_object("Gaia DR2 "+str(gaiadr2), catalog=["II/246/out"], radius=radius_search)
     else:
         result_2mass=vq2mass.query_object(name_search, catalog=["II/246/out"], radius=radius_search)
+    if id2mass is not None:
+        il = np.where(result_2mass[0]['_2MASS'] == id2mass)[0][0]
+        return result_2mass[0][il]
     return result_2mass
 
-def get_allwise_data(gaiadr2, name_search=None):
-    vq2wise = Vizier(columns=['RAJ2000', 'DEJ2000', 'W1mag', 'e_W1mag', 'W2mag', 'e_W2mag', 'W3mag', 'e_W3mag', 'W4mag', 'e_W4mag'], row_limit=5000)
+def get_allwise_data(gaiadr2, name_search=None, idallwise=None):
+    vq2wise = Vizier(columns=['AllWISE', 'RAJ2000', 'DEJ2000', 'W1mag', 'e_W1mag', 'W2mag', 'e_W2mag', 'W3mag', 'e_W3mag', 'W4mag', 'e_W4mag'], row_limit=5000)
     radius_search = 10.0*u.arcsec
     if name_search is None:
         result_allwise=vq2wise.query_object("Gaia DR2 "+str(gaiadr2), catalog=["II/328/allwise"], radius=radius_search)
     else:
         result_allwise=vq2wise.query_object(name_search, catalog=["II/328/allwise"], radius=radius_search)
+    if idallwise is not None:
+        il = np.where(result_allwise[0]['AllWISE'] == idallwise)[0][0]
+        return result_allwise[0][il]
     return result_allwise
 
-
 def get_gaiadr3_data(gaiadr2, gaia3, name_search=None):
-    vq2 = Vizier(columns=['Source','Plx','e_Plx', 'FG','e_FG','Gmag','e_Gmag', 'BPmag','e_BPmag', 'RPmag','e_RPmag', 'o_Gmag'], row_limit=5000) 
+    vq2 = Vizier(columns=['Source', '2MASS', 'AllWISE', 'RA_ICRS', 'DE_ICRS', 'Plx','e_Plx', 'FG','e_FG','Gmag','e_Gmag', 'BPmag','e_BPmag', 'RPmag','e_RPmag', 'o_Gmag'], row_limit=5000) 
+    radius_search = 20.0*u.arcsec
+    if name_search is None:
+        result_gaia_vizier_dr3=vq2.query_object("Gaia DR2 "+str(gaiadr2), catalog=["I/355/gaiadr3"], radius=radius_search)
+    else:
+        result_gaia_vizier_dr3=vq2.query_object(name_search, catalog=["I/355/gaiadr3"], radius=radius_search*15.)
+    try:
+        iline3 = np.where(result_gaia_vizier_dr3[0]['Source'] == int(gaia3))[0][0]
+        #print(result_gaia_vizier_dr3[0]['Source','Plx','e_Plx', 'Gmag', 'e_Gmag', 'FG', 'e_FG', 'RPmag', 'e_RPmag', 'BPmag', 'e_BPmag'][iline3])
+    except IndexError:
+        result_gaia_vizier_dr3=vq2.query_object("Gaia DR2 "+str(gaiadr2), catalog=["I/355/gaiadr3"], radius=radius_search*25.)
+        try:
+            iline3 = np.where(result_gaia_vizier_dr3[0]['Source'] == int(gaia3))[0][0]
+        #    print(result_gaia_vizier_dr3[0]['Source','Plx','e_Plx', 'Gmag', 'e_Gmag', 'FG', 'e_FG', 'RPmag', 'e_RPmag', 'BPmag', 'e_BPmag'][iline3])
+        except IndexError:
+            result_gaia_vizier_dr3 =  Table( [[-1], [-1],[-1], [-1] ,[-1], [-1] ,[-1] ,[-1]   ,[-1] , [-1]    ] ,
+                                    names=('Plx','e_Plx','Gmag','e_Gmag','FG','e_FG','RPmag','e_RPmag','BPmag','e_BPmag'))
+            return result_gaia_vizier_dr3, -1
+    #print("Iline2:", iline3)
+    #print(result_gaia_vizier_dr3)
+    return result_gaia_vizier_dr3[0][iline3]
+
+
+def get_gaiaedr3_data(gaiadr2, gaia3, name_search=None):
+    vq2 = Vizier(columns=['Source', 'RA_ICRS', 'DE_ICRS', 'Plx','e_Plx', 'FG','e_FG','Gmag','e_Gmag', 'BPmag','e_BPmag', 'RPmag','e_RPmag', 'o_Gmag'], row_limit=5000) 
     radius_search = 20.0*u.arcsec
     if name_search is None:
         result_gaia_vizier_dr3=vq2.query_object("Gaia DR2 "+str(gaiadr2), catalog=["I/350/gaiaedr3"], radius=radius_search)
@@ -78,19 +108,39 @@ def get_gaiadr3_data(gaiadr2, gaia3, name_search=None):
         result_gaia_vizier_dr3=vq2.query_object(name_search, catalog=["I/350/gaiaedr3"], radius=radius_search*15.)
     try:
         iline3 = np.where(result_gaia_vizier_dr3[0]['Source'] == int(gaia3))[0][0]
-        print(result_gaia_vizier_dr3[0]['Source','Plx','e_Plx', 'Gmag', 'e_Gmag', 'FG', 'e_FG', 'RPmag', 'e_RPmag', 'BPmag', 'e_BPmag'][iline3])
+        #print(result_gaia_vizier_dr3[0]['Source','Plx','e_Plx', 'Gmag', 'e_Gmag', 'FG', 'e_FG', 'RPmag', 'e_RPmag', 'BPmag', 'e_BPmag'][iline3])
     except IndexError:
         result_gaia_vizier_dr3=vq2.query_object("Gaia DR2 "+str(gaiadr2), catalog=["I/350/gaiaedr3"], radius=radius_search*25.)
         try:
             iline3 = np.where(result_gaia_vizier_dr3[0]['Source'] == int(gaia3))[0][0]
-            print(result_gaia_vizier_dr3[0]['Source','Plx','e_Plx', 'Gmag', 'e_Gmag', 'FG', 'e_FG', 'RPmag', 'e_RPmag', 'BPmag', 'e_BPmag'][iline3])
+        #    print(result_gaia_vizier_dr3[0]['Source','Plx','e_Plx', 'Gmag', 'e_Gmag', 'FG', 'e_FG', 'RPmag', 'e_RPmag', 'BPmag', 'e_BPmag'][iline3])
         except IndexError:
             result_gaia_vizier_dr3 =  Table( [[-1], [-1],[-1], [-1] ,[-1], [-1] ,[-1] ,[-1]   ,[-1] , [-1]    ] ,
                                     names=('Plx','e_Plx','Gmag','e_Gmag','FG','e_FG','RPmag','e_RPmag','BPmag','e_BPmag'))
             return result_gaia_vizier_dr3, -1
-    print("Iline2:", iline3)
-    print(result_gaia_vizier_dr3)
+    #print("Iline2:", iline3)
+    #print(result_gaia_vizier_dr3)
     return result_gaia_vizier_dr3[0][iline3]
+
+
+
+def get_fluxEarth(gaiaid):
+
+    data_gaia = get_gaiadr3_data(gaiaid, gaiaid)
+    data_2mass = get_2mass_data(gaiaid, id2mass=data_gaia['_2MASS'])
+    data_wise = get_allwise_data(gaiaid, idallwise=data_gaia['AllWISE'])
+
+
+    bands = ["BP", "G", "RP", "J", "H", "K", "W1", "W2", "W3", "W4"]
+    for b in bands:
+        if b in ["BP", "G", "RP"]:
+            data = data_gaia
+        if b in ["J", "H", "K"]:
+            data = data_2mass
+        if b in ["W1", "W2", "W3", "W4"]:
+            data = data_wise
+        wave, fluxJy, fluxW, fluxerg = gbp.mag2flux(data[b+"mag"], b)
+        print(b, wave, fluxJy, fluxW, fluxerg)
 
 
 ### Main program:
@@ -98,14 +148,22 @@ def main():
     gaiadr2 = get_gaiadr2("HD80606")
     print(gaiadr2)
 
+#    data_gaia = get_gaiaedr3_data(gaiadr2, gaiadr2)
+#    print(data_gaia)
+
     data_gaia = get_gaiadr3_data(gaiadr2, gaiadr2)
     print(data_gaia)
 
-    data_2mass = get_2mass_data(gaiadr2)
-    print(data_2mass[0])
+    print(data_gaia['_2MASS'])
 
-    data_wise = get_allwise_data(gaiadr2)
-    print(data_wise[0])
+    data_2mass = get_2mass_data(gaiadr2, id2mass=data_gaia['_2MASS'])
+    print(data_2mass)
+
+    print(data_gaia['AllWISE'])
+    data_wise = get_allwise_data(gaiadr2, idallwise=data_gaia['AllWISE'])
+    print(data_wise)
+
+    get_fluxEarth(gaiadr2)
 
 
 

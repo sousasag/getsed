@@ -59,17 +59,17 @@ def get_zeropoints():
 bands = np.array([])
 
 def mag2flux(mag, band):
-    c = 29979245800.0 * units.cm / units.s
+    c = 29979245800.0 * u.cm / u.s
     zeros = get_zeropoints()
     line = np.where(band == zeros["band"])[0]
     wave = zeros["wave"][line]* u.micron
     fluxzero = zeros["fluxJy"][line]* u.Jy
     
     fluxJy = fluxzero * 10**(-0.4*mag)
-    fluxW = fluxJy.to(units.watt / units.m**2 / units.Hz)
-    fluxerg = (fluxJy * c / wave**2.).to(units.erg / units.s / units.cm**2 / units.angstrom)
+    fluxW = fluxJy.to(u.watt / u.m**2 / u.Hz)
+    fluxerg = (fluxJy * c / wave**2.).to(u.erg / u.s / u.cm**2 / u.angstrom)
 
-    return fluxJy, fluxW, fluxerg
+    return wave, fluxJy, fluxW, fluxerg
 
 
 
